@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Великая Отечественная Война - Текстовая Игра</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            padding: 20px;
+        }
+        .question {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        .answer {
+            display: block;
+            margin: 10px 0;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 5px;
+        }
+        .answer:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Великая Отечественная Война</h1>
+    <div id="game">
+        <div class="question" id="question">Вопрос появится здесь</div>
+        <button class="answer" onclick="checkAnswer(0)">Ответ 1</button>
+        <button class="answer" onclick="checkAnswer(1)">Ответ 2</button>
+        <button class="answer" onclick="checkAnswer(2)">Ответ 3</button>
+        <button class="answer" onclick="checkAnswer(3)">Ответ 4</button>
+        <div id="result"></div>
+    </div>
+    <script>
+        const questions = [
+            {
+                question: "Когда началась Великая Отечественная война?",
+                answers: ["22 июня 1941 года", "1 сентября 1939 года", "7 ноября 1941 года", "9 мая 1945 года"],
+                correct: 0,
+                city: "Москва"
+            },
+            {
+                question: "Кто командовал обороной Сталинграда?",
+                answers: ["Константин Рокоссовский", "Георгий Жуков", "Василий Чуйков", "Иван Конев"],
+                correct: 2,
+                city: "Сталинград"
+            },
+            {
+                question: "Как называлась операция по освобождению Киева?",
+                answers: ["Операция Багратион", "Киевская наступательная операция", "Операция Барбаросса", "Берлинская операция"],
+                correct: 1,
+                city: "Киев"
+            },
+            {
+                question: "Кто был Верховным Главнокомандующим Вооруженными Силами СССР в годы Великой Отечественной войны?",
+                answers: ["Леонид Брежнев", "Никита Хрущёв", "Иосиф Сталин", "Лаврентий Берия"],
+                correct: 3,
+                city: "Минск"
+            },
+            {
+                question: "Как называлась самая крупная танковая битва Великой Отечественной войны?",
+                answers: ["Битва под Прохоровкой", "Битва за Москву", "Битва за Ленинград", "Курская битва"],
+                correct: 0,
+                city: "Курск"
+            },
+            {
+                question: "Как называлась операция по освобождению Белоруссии в 1944 году?",
+                answers: ["Операция Цитадель", "Операция Уран", "Операция Багратион", "Операция Тайфун"],
+                correct: 2,
+                city: "Минск"
+            },
+            {
+                question: "Какой город был героически защищён в блокаде в течение 872 дней?",
+                answers: ["Москва", "Ленинград", "Сталинград", "Севастополь"],
+                correct: 1,
+                city: "Ленинград"
+            },
+            {
+                question: "Каким знаменитым полководцем командовались советские войска в битве за Берлин?",
+                answers: ["Георгий Жуков", "Василий Чуйков", "Константин Рокоссовский", "Иван Конев"],
+                correct: 0,
+                city: "Берлин"
+            },
+            {
+                question: "Какая операция завершила освобождение территории СССР от немецко-фашистских захватчиков?",
+                answers: ["Берлинская операция", "Висло-Одерская операция", "Будапештская операция", "Ясско-Кишиневская операция"],
+                correct: 3,
+                city: "Будапешт"
+            },
+            {
+                question: "Как назывался план немецкого командования по захвату Москвы?",
+                answers: ["Операция Барбаросса", "Операция Тайфун", "Операция Цитадель", "Операция Багратион"],
+                correct: 1,
+                city: "Москва"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = {
+            russia: 0,
+            germany: 0
+        };
+
+        function loadQuestion() {
+            if (currentQuestion < questions.length) {
+                document.getElementById('question').innerText = questions[currentQuestion].question;
+                const answers = document.getElementsByClassName('answer');
+                for (let i = 0; i < answers.length; i++) {
+                    answers[i].innerText = questions[currentQuestion].answers[i];
+                }
+                document.getElementById('result').innerText = '';
+            } else {
+                endGame();
+            }
+        }
+
+        function checkAnswer(selected) {
+            if (selected === questions[currentQuestion].correct) {
+                score.russia++;
+                document.getElementById('result').innerText = `Правильно! Освобожден город: ${questions[currentQuestion].city}`;
+            } else {
+                score.germany++;
+                document.getElementById('result').innerText = `Неправильно! Немцы заняли город.`;
+            }
+            currentQuestion++;
+            setTimeout(loadQuestion, 2000);
+        }
+
+        function endGame() {
+            let resultText = `Игра окончена! Россия: ${score.russia}, Германия: ${score.germany}. `;
+            if (score.russia > score.germany) {
+                resultText += "Русские победили!";
+            } else {
+                resultText += "Немцы победили!";
+            }
+            document.getElementById('game').innerHTML = `<div id="result">${resultText}</div>`;
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
