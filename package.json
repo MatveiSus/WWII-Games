@@ -1,0 +1,19 @@
+{
+  "name": "reichstag-battle",
+  "version": "1.0.0",
+  "description": "2D Tank Battle Game - Battle of the Reichstag",
+  "scripts": {
+    "start": "http-server",
+    "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "phaser": "^3.70.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1",
+    "http-server": "^14.1.1"
+  }
+}
