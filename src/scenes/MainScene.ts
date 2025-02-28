@@ -20,10 +20,8 @@ export class MainScene extends Phaser.Scene {
     }
 
     create() {
-        // Инициализируем группу для пуль
         this.bullets = this.add.group();
 
-        // Инициализируем клавиатуру
         if (!this.input.keyboard) {
             this.input.keyboard = new Phaser.Input.Keyboard.KeyboardPlugin(this.input);
         }
@@ -34,14 +32,14 @@ export class MainScene extends Phaser.Scene {
         // Add Reichstag
         this.add.image(400, 100, 'reichstag');
 
-        // Create player tank
-        this.playerTank = new Tank(this, 400, 500, 'tank-player', true);
+        // Create player tank at bottom
+        this.playerTank = new Tank(this, 400, 550, 'tank-player', true);
         
-        // Create enemy tanks
+        // Create enemy tanks at top
         const enemyPositions = [
-            { x: 200, y: 200 },
-            { x: 400, y: 200 },
-            { x: 600, y: 200 }
+            { x: 200, y: 100 },
+            { x: 400, y: 100 },
+            { x: 600, y: 100 }
         ];
         
         enemyPositions.forEach(pos => {
@@ -52,7 +50,6 @@ export class MainScene extends Phaser.Scene {
         // Добавляем коллизии
         this.physics.add.collider(this.playerTank, this.enemyTanks);
         
-        // Настраиваем коллизии для пуль
         this.physics.add.overlap(
             this.bullets,
             this.enemyTanks,

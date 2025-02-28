@@ -9,6 +9,7 @@ export class Bullet extends Phaser.GameObjects.Sprite {
         scene.add.existing(this);
         scene.physics.add.existing(this);
 
+        // Устанавливаем скорость в зависимости от направления
         const velocity = this.scene.physics.velocityFromRotation(this.rotation, this.speed);
         (this.body as Phaser.Physics.Arcade.Body).setVelocity(velocity.x, velocity.y);
     }
@@ -17,6 +18,7 @@ export class Bullet extends Phaser.GameObjects.Sprite {
         const width = Number(this.scene.game.config.width);
         const height = Number(this.scene.game.config.height);
 
+        // Уничтожаем пулю, когда она выходит за пределы экрана
         if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
             this.destroy();
         }
