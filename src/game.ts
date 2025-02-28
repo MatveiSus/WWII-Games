@@ -10,8 +10,11 @@ const config: Phaser.Types.Core.GameConfig = {
         default: 'arcade',
         arcade: {
             debug: false,
-            gravity: { y: 0 }
+            gravity: { x: 0, y: 0 }
         }
+    },
+    input: {
+        keyboard: true // Явно включаем поддержку клавиатуры
     },
     scene: [MenuScene, MainScene],
     scale: {
@@ -20,12 +23,6 @@ const config: Phaser.Types.Core.GameConfig = {
     }
 };
 
-export class Game extends Phaser.Game {
-    constructor() {
-        super(config);
-    }
-}
-
 window.onload = () => {
-    new Game();
+    new Phaser.Game(config);
 };
