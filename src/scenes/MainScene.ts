@@ -12,6 +12,7 @@ export class MainScene extends Phaser.Scene {
     private enemyScoreText!: Phaser.GameObjects.Text;
     private maxHits: number = 5;
     private reichstagSprite!: Phaser.GameObjects.Image;
+    private reichstagBoundary!: number;
 
     constructor() {
         super({ key: 'MainScene' });
@@ -26,23 +27,30 @@ export class MainScene extends Phaser.Scene {
     }
 
     create() {
-        // Настраиваем границы мира
+        // Настраиваем физику
         this.physics.world.setBounds(0, 0, 800, 600);
 
-        // Создаем группу для пуль
-        this.bullets = this.add.group({
+        // Создаем группы для пуль
+        const playerBullets = this.add.group({
             classType: Bullet,
-            runChildUpdate: true,
-            maxSize: 30 // Ограничиваем количество пуль
+            runChildUpdate: true
         });
+
+        const enemyBullets = this.add.group({
+            classType: Bullet,
+            runChildUpdate: true
+        });
+
+        this.bullets = this.add.group([playerBullets, enemyBullets]);
 
         // Добавляем фон
         this.add.image(400, 300, 'background');
 
-        // Добавляем рейхстаг и сохраняем ссылку
+        // Добавляем рейхстаг и сохраняем его границу
         this.reichstagSprite = this.add.image(400, 100, 'reichstag');
+        this.reichstagBoundary = this.reichstagSprite.y + this.reichstagSprite.height / 2;
 
-        // Создаем тексты счета с отступами и фоном
+        // Создаем тексты счета
         const scoreStyle = {
             fontSize: '32px',
             fontFamily: 'Arial',
@@ -51,7 +59,6 @@ export class MainScene extends Phaser.Scene {
             padding: { x: 10, y: 5 }
         };
 
-        // Создаем счет для обеих сторон
         this.enemyScoreText = this.add.text(10, 10, 'Немцы: 0', scoreStyle)
             .setScrollFactor(0)
             .setDepth(100);
@@ -79,22 +86,22 @@ export class MainScene extends Phaser.Scene {
         this.physics.add.collider(this.playerTank, this.enemyTanks);
         this.physics.add.collider(this.enemyTanks, this.enemyTanks);
 
-        // Обработка попаданий пуль
-        this.physics.add.collider(
-            this.bullets,
+        // Регистрируем коллизии пуль
+        this.physics.add.overlap(
+            playerBullets,
             this.enemyTanks,
-            (bullet: any, tank: any) => {
-                this.handleBulletHit(bullet, tank);
+            (bullet, tank) => {
+                this.handlePlayerBulletHit(bullet as unknown as Bullet, tank as Tank);
             },
             undefined,
             this
         );
-        
-        this.physics.add.collider(
-            this.bullets,
+
+        this.physics.add.overlap(
+            enemyBullets,
             this.playerTank,
-            (bullet: any, tank: any) => {
-                this.handleBulletHit(bullet, tank);
+            (bullet, tank) => {
+                this.handleEnemyBulletHit(bullet as unknown as Bullet, tank as Tank);
             },
             undefined,
             this
@@ -104,54 +111,45 @@ export class MainScene extends Phaser.Scene {
         this.updateScoreText();
     }
 
-    private updateScoreText() {
-        if (this.enemyScoreText && this.playerScoreText) {
-            console.log('Updating score texts:', this.enemyHits, this.playerHits);
-            this.enemyScoreText.setText(`Немцы: ${this.enemyHits}`).setDepth(100);
-            this.playerScoreText.setText(`СССР: ${this.playerHits}`).setDepth(100);
+    private handlePlayerBulletHit(bullet: Bullet, tank: Tank) {
+        if (!bullet.active || !tank.active) return;
+
+        console.log('Player bullet hit enemy tank!');
+        bullet.destroy();
+        tank.destroy();
+        
+        this.playerHits++;
+        this.enemyTanks = this.enemyTanks.filter(t => t !== tank);
+        
+        if (this.playerHits >= this.maxHits) {
+            this.gameOver = true;
+            this.showGameOver('Победа СССР!', '#00FF00');
         }
+        
+        this.updateScoreText();
     }
 
-    private handleBulletHit(bullet: Phaser.GameObjects.GameObject, tank: Phaser.GameObjects.GameObject) {
-        // Проверяем, что оба объекта все еще существуют
-        if (!bullet || !tank || !bullet.active || !tank.active) return;
+    private handleEnemyBulletHit(bullet: Bullet, tank: Tank) {
+        if (!bullet.active || !tank.active) return;
 
-        // Уничтожаем пулю
+        console.log('Enemy bullet hit player tank!');
         bullet.destroy();
-
-        // Приводим tank к правильному типу
-        const tankSprite = tank as Tank;
-
-        if (tankSprite === this.playerTank) {
-            // Попадание в игрока
-            this.enemyHits++;
-            console.log('Enemy hit! Score:', this.enemyHits);
-            
-            if (this.enemyHits >= this.maxHits) {
-                this.gameOver = true;
-                this.updateScoreText();
-                this.showGameOver('Победа Вермахта!', '#FF0000');
-            }
-        } else {
-            // Попадание во врага
-            this.playerHits++;
-            console.log('Player hit! Score:', this.playerHits);
-            
-            // Уничтожаем вражеский танк
-            tankSprite.destroy();
-            
-            // Удаляем танк из массива
-            this.enemyTanks = this.enemyTanks.filter(t => t !== tankSprite);
-            
-            if (this.playerHits >= this.maxHits) {
-                this.gameOver = true;
-                this.updateScoreText();
-                this.showGameOver('Победа СССР!', '#00FF00');
-            }
+        
+        this.enemyHits++;
+        
+        if (this.enemyHits >= this.maxHits) {
+            this.gameOver = true;
+            this.showGameOver('Победа Вермахта!', '#FF0000');
         }
-
-        // Обновляем отображение счета
+        
         this.updateScoreText();
+    }
+
+    private updateScoreText() {
+        if (this.enemyScoreText && this.playerScoreText) {
+            this.enemyScoreText.setText(`Немцы: ${this.enemyHits}`);
+            this.playerScoreText.setText(`СССР: ${this.playerHits}`);
+        }
     }
 
     private showGameOver(message: string, color: string) {
@@ -196,7 +194,6 @@ export class MainScene extends Phaser.Scene {
         .setInteractive()
         .setDepth(102);
 
-        // Обработчики событий кнопки
         restartButton.on('pointerdown', () => {
             this.scene.restart();
         });
@@ -216,26 +213,27 @@ export class MainScene extends Phaser.Scene {
         // Обновляем игрока
         if (this.playerTank && this.playerTank.active) {
             this.playerTank.update(time);
+            
+            // Ограничиваем движение игрока относительно рейхстага
+            const playerBody = this.playerTank.body as Phaser.Physics.Arcade.Body;
+            if (playerBody && this.playerTank.y < this.reichstagBoundary) {
+                this.playerTank.y = this.reichstagBoundary;
+                playerBody.setVelocityY(0);
+            }
         }
         
         // Обновляем врагов
         this.enemyTanks.forEach(tank => {
             if (tank && tank.active) {
                 tank.update(time);
+                
+                // Ограничиваем движение врагов относительно рейхстага
+                const enemyBody = tank.body as Phaser.Physics.Arcade.Body;
+                if (enemyBody && tank.y > this.reichstagBoundary) {
+                    tank.y = this.reichstagBoundary;
+                    enemyBody.setVelocityY(0);
+                }
             }
         });
-
-        // Проверяем границы рейхстага для танков
-        const reichstagBottom = this.reichstagSprite.y + this.reichstagSprite.height / 2;
-        
-        this.enemyTanks.forEach(tank => {
-            if (tank.y > reichstagBottom) {
-                tank.y = reichstagBottom;
-            }
-        });
-
-        if (this.playerTank.y < reichstagBottom) {
-            this.playerTank.y = reichstagBottom;
-        }
     }
 }

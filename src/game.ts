@@ -1,28 +1,24 @@
 import 'phaser';
 import { MainScene } from './scenes/MainScene';
-import { MenuScene } from './scenes/MenuScene';
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
+    parent: 'game',
     physics: {
         default: 'arcade',
         arcade: {
-            debug: false,
-            gravity: { x: 0, y: 0 }
+            gravity: { x: 0, y: 0 }, // Исправлено: добавлен x
+            debug: false
         }
     },
+    scene: MainScene,
     input: {
-        keyboard: true // Явно включаем поддержку клавиатуры
-    },
-    scene: [MenuScene, MainScene],
-    scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        keyboard: true
     }
 };
 
-window.onload = () => {
+window.addEventListener('load', () => {
     new Phaser.Game(config);
-};
+});
