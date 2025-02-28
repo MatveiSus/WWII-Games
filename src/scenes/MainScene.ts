@@ -6,6 +6,13 @@ export class MainScene extends Phaser.Scene {
     private enemyTanks: Tank[] = [];
     private gameOver: boolean = false;
     private bullets!: Phaser.GameObjects.Group;
+    
+    // Счетчики попаданий
+    private playerHits: number = 0;
+    private enemyHits: number = 0;
+    private playerScoreText!: Phaser.GameObjects.Text;
+    private enemyScoreText!: Phaser.GameObjects.Text;
+    private maxHits: number = 5;
 
     constructor() {
         super({ key: 'MainScene' });
@@ -20,28 +27,41 @@ export class MainScene extends Phaser.Scene {
     }
 
     create() {
-        // Настраиваем границы мира
-        this.physics.world.setBounds(0, 0, 800, 600);
-
+        // Создаем группу для пуль
         this.bullets = this.add.group({
             classType: Bullet,
             runChildUpdate: true
         });
 
-        if (!this.input.keyboard) {
-            this.input.keyboard = new Phaser.Input.Keyboard.KeyboardPlugin(this.input);
-        }
-
-        // Add background
+        // Добавляем фон
         this.add.image(400, 300, 'background');
-        
-        // Add Reichstag
         this.add.image(400, 100, 'reichstag');
 
-        // Create player tank
+        // Создаем текст счета ПЕРЕД созданием танков
+        // Стиль для текста счета
+        const scoreStyle = {
+            fontSize: '32px',
+            fontFamily: 'Arial',
+            color: '#808080',
+            backgroundColor: '#00000055'
+        };
+
+        // Создаем тексты счета с отступами от краев и фоном
+        this.enemyScoreText = this.add.text(10, 10, 'Немцы: 0', scoreStyle)
+            .setScrollFactor(0)
+            .setDepth(100); // Устанавливаем высокий z-index
+
+        this.playerScoreText = this.add.text(620, 10, 'СССР: 0', scoreStyle)
+            .setScrollFactor(0)
+            .setDepth(100); // Устанавливаем высокий z-index
+
+        // Обновляем счет сразу после создания
+        this.updateScoreText();
+
+        // Создаем танки
         this.playerTank = new Tank(this, 400, 500, 'tank-player', true);
         
-        // Create enemy tanks
+        // Создаем вражеские танки
         const enemyPositions = [
             { x: 200, y: 100 },
             { x: 400, y: 100 },
@@ -53,11 +73,11 @@ export class MainScene extends Phaser.Scene {
             this.enemyTanks.push(enemyTank);
         });
 
-        // Добавляем коллизии между танками
+        // Добавляем коллизии
         this.physics.add.collider(this.playerTank, this.enemyTanks);
         this.physics.add.collider(this.enemyTanks, this.enemyTanks);
 
-        // Добавляем коллизии для пуль
+        // Добавляем обработку попаданий
         this.physics.add.overlap(
             this.bullets,
             this.enemyTanks,
@@ -73,49 +93,105 @@ export class MainScene extends Phaser.Scene {
             undefined,
             this
         );
+
+        // Устанавливаем границы мира
+        this.physics.world.setBounds(0, 0, 800, 600);
+    }
+
+    private updateScoreText() {
+        if (this.enemyScoreText && this.playerScoreText) {
+            this.enemyScoreText.setText(`Немцы: ${this.enemyHits}`);
+            this.playerScoreText.setText(`СССР: ${this.playerHits}`);
+            
+            // Обновляем глубину отображения, чтобы текст всегда был поверх
+            this.enemyScoreText.setDepth(100);
+            this.playerScoreText.setDepth(100);
+        }
     }
 
     private handleBulletHit(bullet: Phaser.GameObjects.GameObject, tank: Tank) {
-        if (!tank.active) return; // Пропускаем, если танк уже уничтожен
+        if (!tank.active) return;
 
-        // Уничтожаем пулю
         bullet.destroy();
 
-        // Уничтожаем танк
-        tank.destroy();
-
-        // Если это игрок, завершаем игру
         if (tank === this.playerTank) {
-            this.gameOver = true;
-            // Можно добавить текст "Game Over"
-            this.add.text(400, 300, 'Game Over', {
-                fontSize: '64px',
-                color: '#FF0000'
-            }).setOrigin(0.5);
-        } else {
-            // Удаляем танк из массива врагов
-            this.enemyTanks = this.enemyTanks.filter(t => t !== tank);
-            
-            // Проверяем условие победы
-            if (this.enemyTanks.length === 0) {
-                this.add.text(400, 300, 'Victory!', {
-                    fontSize: '64px',
-                    color: '#00FF00'
-                }).setOrigin(0.5);
+            this.enemyHits++;
+            if (this.enemyHits >= this.maxHits) {
                 this.gameOver = true;
+                this.updateScoreText(); // Обновляем счет перед показом окна победы
+                this.showGameOver('Победа Вермахта!', '#FF0000');
+            }
+        } else {
+            this.playerHits++;
+            tank.destroy();
+            if (this.playerHits >= this.maxHits) {
+                this.gameOver = true;
+                this.updateScoreText(); // Обновляем счет перед показом окна победы
+                this.showGameOver('Победа СССР!', '#00FF00');
             }
         }
+
+        // Обновляем счет после каждого попадания
+        this.updateScoreText();
+    }
+
+    private showGameOver(message: string, color: string) {
+        // Создаем полупрозрачный черный фон
+        const overlay = this.add.rectangle(0, 0, 800, 600, 0x000000, 0.7)
+            .setOrigin(0, 0)
+            .setDepth(101); // Выше счета
+
+        // Текст окончания игры
+        const gameOverText = this.add.text(400, 250, message, {
+            fontSize: '64px',
+            fontFamily: 'Arial',
+            color: color,
+            stroke: '#000000',
+            strokeThickness: 6
+        }).setOrigin(0.5).setDepth(102);
+
+        // Статистика
+        const statsText = this.add.text(400, 350, 
+            `Попадания СССР: ${this.playerHits}\nПопадания Вермахта: ${this.enemyHits}`, {
+            fontSize: '32px',
+            fontFamily: 'Arial',
+            color: '#FFFFFF',
+            align: 'center',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5).setDepth(102);
+
+        // Кнопка перезапуска
+        const restartButton = this.add.text(400, 450, 'Играть снова', {
+            fontSize: '32px',
+            fontFamily: 'Arial',
+            color: '#FFFFFF',
+            backgroundColor: '#444444',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(0.5)
+          .setInteractive()
+          .setDepth(102);
+
+        restartButton.on('pointerdown', () => {
+            this.scene.restart();
+        });
+
+        restartButton.on('pointerover', () => {
+            restartButton.setStyle({ backgroundColor: '#666666' });
+        });
+
+        restartButton.on('pointerout', () => {
+            restartButton.setStyle({ backgroundColor: '#444444' });
+        });
     }
 
     update(time: number) {
         if (this.gameOver) return;
 
-        // Обновляем игрока
         if (this.playerTank && this.playerTank.active) {
             this.playerTank.update(time);
         }
         
-        // Обновляем врагов
         this.enemyTanks.forEach(tank => {
             if (tank && tank.active) {
                 tank.update(time);
