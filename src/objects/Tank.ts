@@ -8,6 +8,7 @@ export class Tank extends Phaser.GameObjects.Sprite {
     private spaceKey: Phaser.Input.Keyboard.Key;
     private lastFired: number = 0;
     private fireRate: number = 500;
+    private reichstagBoundary: number = 160; // Граница движения выше Рейхстага
 
     constructor(scene: Phaser.Scene, x: number, y: number, texture: string, isPlayer: boolean) {
         super(scene, x, y, texture);
@@ -25,23 +26,30 @@ export class Tank extends Phaser.GameObjects.Sprite {
         
         this.setOrigin(0.5);
         
-        // Устанавливаем правильную ротацию
-        if (isPlayer) {
-            this.rotation = -Math.PI / 2; // -90 градусов (вверх)
-        } else {
+        // Поворачиваем вражеские танки вниз (90 градусов)
+        if (!isPlayer) {
             this.rotation = Math.PI / 2; // 90 градусов (вниз)
+            this.angle = 90; // Явно устанавливаем угол
+        } else {
+            this.rotation = -Math.PI / 2; // -90 градусов (вверх)
+            this.angle = -90;
         }
 
-        // Включаем физическое тело
         const body = this.body as Phaser.Physics.Arcade.Body;
         if (body) {
-            body.setCollideWorldBounds(true); // Танк не может выйти за пределы мира
+            body.setCollideWorldBounds(true);
         }
     }
 
-    destroy(fromScene?: boolean) {
-        this.active = false;
-        super.destroy(fromScene);
+    private checkBoundaries() {
+        const body = this.body as Phaser.Physics.Arcade.Body;
+        if (body) {
+            // Не позволяем танкам заезжать выше определенной границы
+            if (this.y < this.reichstagBoundary) {
+                this.y = this.reichstagBoundary;
+                body.setVelocityY(0);
+            }
+        }
     }
 
     update(time: number) {
@@ -52,6 +60,8 @@ export class Tank extends Phaser.GameObjects.Sprite {
         } else {
             this.updateEnemy(time);
         }
+
+        this.checkBoundaries();
     }
 
     private fire(time: number) {
@@ -77,7 +87,6 @@ export class Tank extends Phaser.GameObjects.Sprite {
         if (body) {
             body.setVelocity(0);
 
-            // Полное управление для игрока
             if (this.cursors.up?.isDown) {
                 body.setVelocityY(-this.speed);
             } else if (this.cursors.down?.isDown) {
@@ -90,7 +99,6 @@ export class Tank extends Phaser.GameObjects.Sprite {
                 body.setVelocityX(this.speed);
             }
 
-            // Нормализуем скорость по диагонали
             if (body.velocity.length() > 0) {
                 body.velocity.normalize().scale(this.speed);
             }
@@ -107,7 +115,6 @@ export class Tank extends Phaser.GameObjects.Sprite {
         const body = this.body as Phaser.Physics.Arcade.Body;
         
         if (body) {
-            // Случайное движение врагов
             if (Math.random() < 0.02) {
                 const randomDirection = Math.random();
                 body.setVelocity(0);
@@ -123,7 +130,6 @@ export class Tank extends Phaser.GameObjects.Sprite {
                 }
             }
 
-            // Случайная стрельба
             if (Math.random() < 0.01) {
                 this.fire(time);
             }
